@@ -1,0 +1,4 @@
+PS D:\CD_PROJECT> bison -d project.y
+PS D:\CD_PROJECT> flex project.l
+PS D:\CD_PROJECT> gcc -o comp lex.yy.c project.tab.c -std=c99
+PS D:\CD_PROJECT> .\comp sample-programs/1_variables.txt

@@ -1,0 +1,16 @@
+
+x := 11;
+y := 21.49;
+z := -21.3;
+
+print "Value of x: ";
+print x;
+print "\n";
+
+print "Value of y: ";
+print y;
+print "\n";
+
+print "Value of z: ";
+print z;
+print "\n";
