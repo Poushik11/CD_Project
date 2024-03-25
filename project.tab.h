@@ -50,29 +50,22 @@
      ASSIGN = 266,
      EXIT = 267,
      RANDOM = 268,
-     PI = 269,
-     SCAN = 270,
-     LOG = 271,
-     EXP = 272,
-     SQRT = 273,
-     FLOOR = 274,
-     CEIL = 275,
-     ABS = 276,
-     SIN = 277,
-     ASIN = 278,
-     COS = 279,
-     ACOS = 280,
-     TAN = 281,
-     ATAN = 282,
-     IFX = 283,
-     ELSE = 284,
-     OR = 285,
-     AND = 286,
-     NE = 287,
-     LE = 288,
-     GE = 289,
-     NOT = 290,
-     UMINUS = 291
+     SCAN = 269,
+     LOG = 270,
+     EXP = 271,
+     SQRT = 272,
+     FLOOR = 273,
+     CEIL = 274,
+     ABS = 275,
+     IFX = 276,
+     ELSE = 277,
+     OR = 278,
+     AND = 279,
+     NE = 280,
+     LE = 281,
+     GE = 282,
+     NOT = 283,
+     UMINUS = 284
    };
 #endif
 
@@ -93,7 +86,7 @@ typedef union YYSTYPE
 
 
 /* Line 1676 of yacc.c  */
-#line 97 "project.tab.h"
+#line 90 "project.tab.h"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */

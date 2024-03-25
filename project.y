@@ -6,7 +6,7 @@
     #include <time.h>
     #include <math.h>
     #include "project.h"
-
+    nodeType *p = NULL;
     #define YYDEBUG 0
 
     int getIndex(char *id, char mode);      /* Returns index from symbol table */
@@ -47,14 +47,19 @@
 %nonassoc UMINUS
 
 %type <nPtr> statement expression statement_list
+%type <nPtr> program
+
 
 %%
-program : function { exit(0); }
+program : function { printSymbolTable(); printAST($$); exit(0); }
         ;
 
 function : 
-         | function statement { ex($2); freeNode($2); }
+         | function statement { ex($2); printAST($2); freeNode($2); }
          ;
+
+
+
 
 statement : ';' { $$ = opr(';', 2, NULL, NULL); }
           | expression ';' { $$ = $1; }
@@ -103,6 +108,8 @@ expression : NUMBER { $$ = cond($1); }
            | '(' expression ')' { $$ = $2; }
            ;
 %%
+
+
 
 int getIndex(char *id, char mode)
 {
@@ -213,6 +220,141 @@ void freeNode(nodeType *p) {
     }
     free(p);
 }
+void printSymbolTable() {
+    printf("\n");
+    printf("Symbol Table:\n");
+    printf("+-------+--------------+-----------+\n");
+    printf("| Index | Variable Name|  Value    |\n");
+    printf("+-------+--------------+-----------+\n");
+    for (int i = 0; i < SYMSIZE; i++) {
+        if (strcmp(vars[i], "-1") != 0) {
+            printf("| %-5d | %-12s | %-9lf |\n", i, vars[i], sym[i]);
+        }
+    }
+    printf("+-------+--------------+-----------+\n");
+}
+
+void printAST(nodeType *p) {
+    if (!p) return;
+
+    switch (p->type) {
+        case typeCon:
+            if (p->con.type == typeNum)
+                printf(" #AST: Number: %lf\n", p->con.dValue);
+            else if (p->con.type == typeStr)
+                printf(" #AST: String: %s\n", p->con.sValue);
+            break;
+        case typeId:
+            printf(" #AST: Identifier: %s\n", vars[p->id.i]);
+            break;
+        case typeOpr:
+            switch (p->opr.oper) {
+                case WHILE:
+                    printf(" #AST: While loop:\n");
+                    printf(" #AST: Condition:\n");
+                    printAST(p->opr.op[0]);
+                    printf(" #AST: Body:\n");
+                    printAST(p->opr.op[1]);
+                    break;
+                case FOR:
+                    printf("#AST: For loop:\n");
+                    printf("Initialization:\n");
+                    printAST(p->opr.op[0]);
+                    printf("#AST: Condition:\n");
+                    printAST(p->opr.op[1]);
+                    printf(" #AST: Increment:\n");
+                    printAST(p->opr.op[2]);
+                    printf("#AST: Body:\n");
+                    printAST(p->opr.op[3]);
+                    break;
+                case IF:
+                    printf("#AST: If statement:\n");
+                    printf("#AST: Condition:\n");
+                    printAST(p->opr.op[0]);
+                    printf("#AST: Then branch:\n");
+                    printAST(p->opr.op[1]);
+                    if (p->opr.nops > 2) {
+                        printf("#AST: Else branch:\n");
+                        printAST(p->opr.op[2]);
+                    }
+                    break;
+                case PRINT:
+                    printf("#AST: Print statement:\n");
+                    printAST(p->opr.op[0]);
+                    break;
+                case SCAN:
+                    printf("#AST: Scan statement:\n");
+                    printAST(p->opr.op[0]);
+                    break;
+                case ASSIGN:
+                    printf("#AST: Assignment:\n");
+                    printAST(p->opr.op[0]);
+                    printf("#AST: Value:\n");
+                    printAST(p->opr.op[1]);
+                    break;
+                case ';':
+                    printAST(p->opr.op[0]);
+                    printAST(p->opr.op[1]);
+                    break;
+                case UMINUS:
+                    printf("#AST: Unary Minus:\n");
+                    printAST(p->opr.op[0]);
+                    break;
+                case '^':
+                case '+':
+                case '-':
+                case '*':
+                case '/':
+                case '%':
+                case '>':
+                case '<':
+                case GE:
+                case LE:
+                case '=':
+                case NE:
+                case AND:
+                case OR:
+                    printf("#AST: Operator: %d\n", p->opr.oper);
+                    printf("#AST: Left Operand:\n");
+                    printAST(p->opr.op[0]);
+                    printf("#AST: Right Operand:\n");
+                    printAST(p->opr.op[1]);
+                    break;
+                case NOT:
+                    printf("#AST: Logical Not:\n");
+                    printAST(p->opr.op[0]);
+                    break;
+                case LOG:
+                    printf("#AST: Logarithm:\n");
+                    printf("#AST: Base:\n");
+                    printAST(p->opr.op[0]);
+                    if (p->opr.nops > 1) {
+                        printf("#AST: Value:\n");
+                        printAST(p->opr.op[1]);
+                    }
+                    break;
+                case EXP:
+                case SQRT:
+                case FLOOR:
+                case CEIL:
+                case ABS:
+                    printf("#AST: Function Call: %d\n", p->opr.oper);
+                    printf("#AST: Argument:\n");
+                    printAST(p->opr.op[0]);
+                    break;
+                case RANDOM:
+                    printf("#AST: Random Number:\n");
+                    printf("#AST: Lower Bound:\n");
+                    printAST(p->opr.op[0]);
+                    printf("#AST: Upper Bound:\n");
+                    printAST(p->opr.op[1]);
+                    break;
+                default:
+                    printf("#AST: Unknown Operator: %d\n", p->opr.oper);
+            }
+    }
+}
+
 
 double ex(nodeType *p) {
     if (!p) return 0;
@@ -227,7 +369,6 @@ double ex(nodeType *p) {
                         ex(p->opr.op[1]);
                     return 0;
                 case FOR:
-                {                    
                     sym[p->opr.op[0]->id.i] = ex(p->opr.op[1]);     /* start */
                     double end = ex(p->opr.op[2]), step = ex(p->opr.op[3]);
                     while (FOR_CONDITION(sym[p->opr.op[0]->id.i], end, step)) {
@@ -235,7 +376,6 @@ double ex(nodeType *p) {
                         sym[p->opr.op[0]->id.i] += step;
                     }
                     return 0;
-                }
                 case IF:
                     if (ex(p->opr.op[0]))
                         ex(p->opr.op[1]);
@@ -246,6 +386,8 @@ double ex(nodeType *p) {
                     if (p->opr.op[0]->type == typeCon && p->opr.op[0]->con.type == typeStr) {
                         char *sValue = p->opr.op[0]->con.sValue;
                         int i, slen = strlen(sValue);
+                        printf("+-------------------+\n");
+          
                         for (i = 0; i < slen-1; i++) {
                             if (sValue[i] == '\\' && sValue[i+1] == 'n') {
                                 printf("\n");
@@ -253,49 +395,49 @@ double ex(nodeType *p) {
                             }
                             else if (sValue[i] == '\\' && sValue[i+1] == 't') {
                                 printf("\t");
-                                i++;
                             }
                             else printf("%c", sValue[i]);
                         }
                         if (i == slen-1) printf("%c", sValue[i]);
+                        printf("+-------------------+\n");
                         return 0;
                     }
                     else {
                         double dValue = ex(p->opr.op[0]);
-                        if (dValue == floor(dValue)) printf("%d", (int)dValue);
-                        else if (dValue - floor(dValue) < 1e-6) printf("%e", dValue);
-                        else printf("%lf", dValue);
+                        printf("+-------------------+\n");
+                        printf("| Value: %lf        |\n", dValue);
+                        printf("+-------------------+\n");
                         return 0;
                     }
                 case SCAN:
-                {
-                    double dValue;
-                    printf(">>> ");
-                    scanf("%lf", &dValue);
-                    return sym[p->opr.op[0]->id.i] = dValue;
-                }
+                    {
+                        double dValue;
+                        printf(">>> ");
+                        scanf("%lf", &dValue);
+                        return sym[p->opr.op[0]->id.i] = dValue;
+                    }
                 case RANDOM:
-                {
-                    double lower = ex(p->opr.op[0]), upper = ex(p->opr.op[1]);
-                    srand(seed += 912);
-                    if (upper - lower < 1)
-                        return ((double)rand() * (upper - lower)) / (double)RAND_MAX + lower;
-                    else 
-                        return ((double)rand() / RAND_MAX) + (rand() % ((int)upper - (int)lower)) + lower;
-                }
+                    {
+                        double lower = ex(p->opr.op[0]), upper = ex(p->opr.op[1]);
+                        srand(seed += 912);
+                        if (upper - lower < 1)
+                            return ((double)rand() * (upper - lower)) / (double)RAND_MAX + lower;
+                        else 
+                            return ((double)rand() / RAND_MAX) + (rand() % ((int)upper - (int)lower)) + lower;
+                    }
                 case LOG:
-                {
-                    if (p->opr.nops == 1) return log(ex(p->opr.op[0]));
-                    else return log(ex(p->opr.op[0])) / log(ex(p->opr.op[1]));
-                }
+                    {
+                        if (p->opr.nops == 1) return log(ex(p->opr.op[0]));
+                        else return log(ex(p->opr.op[0])) / log(ex(p->opr.op[1]));
+                    }
                 case EXP:
-                {
-                    return exp(ex(p->opr.op[0]));
-                }
+                    {
+                        return exp(ex(p->opr.op[0]));
+                    }
                 case SQRT:
-                {
-                    return sqrt(ex(p->opr.op[0]));
-                }
+                    {
+                        return sqrt(ex(p->opr.op[0]));
+                    }
                 case FLOOR: return floor(ex(p->opr.op[0]));
                 case CEIL: return ceil(ex(p->opr.op[0]));
                 case ABS: return fabs(ex(p->opr.op[0]));
@@ -340,6 +482,7 @@ int main(int argc, char **argv) {
         freopen(argv[1], "r", stdin);
         yyparse();
     }
+    printSymbolTable();
 
     return 0;
 }
